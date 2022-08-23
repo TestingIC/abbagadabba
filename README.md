@@ -87,3 +87,24 @@ seqData
     # 
     # $dna
     # [1] ">JAEIFY000000000.1\n" ">JAEIFX000000000.1\n"
+
+## Example usage using locationToSequence.R
+When wanting to find sequence data for a species based on a state or kingdom, execute locationToSequence.R.
+locationToSequence.R does require the RGBIF package which can be installed from the terminal
+```
+R
+install.packages('rgbif')
+```
+From there just select a mirror and the package should install.
+
+To modify the search parameters, line 5 calling occ_data function from the rgbif package is where queries can be specified.
+``` r
+full_data <- rgbif::occ_data(country = 'US', limit = 1, stateProvince = 'Maine', scientificName = '') 
+#All parameters can be modified but should be left empty or deleted if not wanting specified.
+```
+
+From there, the sequence data (from each name) returned will be given based on the amount of sequences requested. This can be specified and changed on line 26.
+``` r
+seq_data <- getGenBankSeqs(seq_ids[1])
+#Can be changed to seq_data <- getGenBankSeqs(seq_ids[1:5]) to get back multiple sequences
+```

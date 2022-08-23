@@ -22,9 +22,12 @@ getGenBankSeqs <- function(id) {
     # convert XML to list
     rawList <- XML::xmlToList(raw)
 
+
+
     # loop over list and extract needed info
     out <- lapply(rawList, function(l) {
         # get easy to retrieve data
+
         dat <- data.frame(
             accession = extractSafely(l$`INSDSeq_accession-version`),
             species = extractSafely(l$INSDSeq_organism),
@@ -67,23 +70,44 @@ parseFeatTab <- function(featTab) {
     # make nested list into a flat, named vector
     featTab <- unlist(featTab)
 
-    # gather info into data.frame
-    info <- data.frame(
-        # info about genomic region
-        region = extractFeatByName('gene', featTab),
-        product = extractFeatByName('product', featTab),
-        organelle = extractFeatByName('organelle', featTab),
-        region_note = extractFeatByName('note', featTab),
+    if (length(featTab) > 60) {
+        # gather info into data.frame
+        info <- data.frame(
+            #info about genomic region
+            region = "Complete Genome",
+            product = NA,
+            organelle = NA,
+            region_note = NA,
 
-        # info about geographic location
-        latlon = extractFeatByName('lat_lon', featTab),
-        locality = extractFeatByName('country', featTab),
+            # info about geographic location
+            latlon = NA,
+            locality = NA,
 
-        # info about specimen
-        coll_date = extractFeatByName('collection_date', featTab),
-        coll_by = extractFeatByName('collected_by', featTab),
-        specimen_id = extractFeatByName('specimen_voucher', featTab)
-    )
+            # info about specimen
+            coll_date = NA,
+            coll_by = NA,
+            specimen_id = NA
+        )
+    }
+    else {
+        # gather info into data.frame
+        info <- data.frame(
+            #info about genomic region
+            region = extractFeatByName('gene', featTab),
+            product = extractFeatByName('product', featTab),
+            organelle = extractFeatByName('organelle', featTab),
+            region_note = extractFeatByName('note', featTab),
+
+            # info about geographic location
+            latlon = extractFeatByName('lat_lon', featTab),
+            locality = extractFeatByName('country', featTab),
+
+            # info about specimen
+            coll_date = extractFeatByName('collection_date', featTab),
+            coll_by = extractFeatByName('collected_by', featTab),
+            specimen_id = extractFeatByName('specimen_voucher', featTab)
+        )
+    }
 
     return(info)
 }
