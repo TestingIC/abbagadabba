@@ -129,7 +129,8 @@ metadataPanel <- function() {
 
 showNames <- function(input, output, session) {
     if (!is.null(input$polygon)) {
-        names <<- unique(occ_data(taxonKey = taxonKeys, limit = input$namesLimit, geometry = input$polygon)$data$scientificName)
+        names <<- rgbif::occ_data(taxonKey = taxonKeys, geometry = input$polygon)$data[c("key", "scientificName")]
+        #names <<- unique(occ_data(taxonKey = taxonKeys, geometry = input$polygon)$data$scientificName)
     }
     else {
         names <<- rgbif::occ_data(taxonKey = taxonKeys)$data[c("key", "scientificName")]
