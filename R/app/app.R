@@ -4,10 +4,11 @@ library('shinyjs')
 library("taxize")
 library("rgbif")
 library("rentrez")
+library("reactable")
 library("DT")
 #library("shinyTree")
 
-names = "WHYYY"
+occ_data = ""
 
 #Functions to help organize UI
 
@@ -95,7 +96,7 @@ namesPanel <- function() {
                          (width=3,
                              wellPanel
                              (
-                                 actionButton("submitOccurences", "Get Occurences"),
+                                 actionButton("getOccDataButton", "Get Occurences"),
                                  textOutput("GetOccurencesCommandText")
                              )
                          ),
@@ -103,7 +104,7 @@ namesPanel <- function() {
                          (width=9,
                              wellPanel
                              (
-                                 #DTOutput('NamesTableOutput')
+                                 DTOutput('NamesTableOutput')
                              )
                          )
                      )
@@ -127,18 +128,28 @@ metadataPanel <- function() {
     )
 }
 
-showNames <- function(input, output, session) {
+generateOccData <- function(input, output, session) {
     if (!is.null(input$polygon)) {
-        names <<- rgbif::occ_data(taxonKey = taxonKeys, geometry = input$polygon)$data[c("key", "scientificName")]
-        #names <<- unique(occ_data(taxonKey = taxonKeys, geometry = input$polygon)$data$scientificName)
+        occ_data <<- rgbif::occ_data(taxonKey = taxonKeys, geometry = input$polygon)$data[c("key", "scientificName", "year", "month", "occurrenceStatus", "basisOfRecord", "datasetKey")]
     }
     else {
-        names <<- rgbif::occ_data(taxonKey = taxonKeys)$data[c("key", "scientificName")]
+        occ_data <<- rgbif::occ_data(taxonKey = taxonKeys)$data[c("scientificName", "key", "year", "month", "occurrenceStatus", "basisOfRecord", "datasetKey")]
     }
 
-    updateSelectInput(session, "name_for_metadata", "Get meta data for:", names$scientificName)
-    output$"NamesTableOutput" <- renderDT(names)
+    updateSelectInput(session, "name_for_metadata", "Get meta data for:", occ_data$scientificName)
 
+
+    output$output_table <- renderReactable({reactable(unique(occ_data), details = function(index) {
+        if (index %in% c(1, 2, 3, 4, 5)) {
+        clean_names <- getNCBITaxonomy(occ_data$scientificName[index])
+        good_names <- clean_names$ncbi_name[!is.na(clean_names$ncbi_name)]
+        seq_ids <- getNCBISeqID(good_names)
+        metadata <- getMetadata(seq_ids[1:5])
+        metadata <- subset(metadata, select = -c(sequence))
+
+        htmltools::div(style = "padding: 1rem", reactable(metadata))
+        }
+    })})
 }
 
 showMetadata <- function(input, output, session) {
@@ -170,7 +181,7 @@ ui <- fluidPage(title = "Abbagadabba Visualization",
 
     useShinyjs(),
     tags$div(style="width: 100%; height: 400px; black; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px; margin-bottom: 20px;", navbar()),
-    tags$div(style="width: 100%; height: 350px; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px;", DTOutput('NamesTableOutput'))
+    tags$div(style="width: 100%; height: 350px; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px;", reactableOutput("output_table"))
 )
 
 taxonKeys <- NULL
@@ -201,8 +212,8 @@ server <- function(input, output, session) {
 
     #Append taxonomic hierarchy using rgbif::name_ussage
 
-    observeEvent(input$"submitOccurences", {
-        showNames(input, output, session)
+    observeEvent(input$"getOccDataButton", {
+        generateOccData(input, output, session)
     })
 
     observeEvent(input$"get_metadata_button", {
