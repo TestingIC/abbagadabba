@@ -128,6 +128,16 @@ metadataPanel <- function() {
     )
 }
 
+ui <- fluidPage(title = "Abbagadabba Visualization",
+                javascriptMap(),
+
+                useShinyjs(),
+                tags$div(style="width: 100%; height: 400px; black; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px; margin-bottom: 20px;", navbar()),
+                tags$div(style="width: 100%; height: 350px; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px;", reactableOutput("output_table"))
+)
+
+#Generate data functions
+
 generateOccData <- function(input, output, session) {
     if (!is.null(input$polygon)) {
         occ_data <<- rgbif::occ_data(taxonKey = taxonKeys, geometry = input$polygon)$data[c("key", "scientificName", "year", "month", "occurrenceStatus", "basisOfRecord", "datasetKey")]
@@ -138,17 +148,11 @@ generateOccData <- function(input, output, session) {
 
     updateSelectInput(session, "name_for_metadata", "Get meta data for:", occ_data$scientificName)
 
-
-    output$output_table <- renderReactable({reactable(unique(occ_data), details = function(index) {
-        if (index %in% c(1, 2, 3, 4, 5)) {
+    output$output_table <- renderReactable({reactable(occ_data, details = function(index) {
         clean_names <- getNCBITaxonomy(occ_data$scientificName[index])
         good_names <- clean_names$ncbi_name[!is.na(clean_names$ncbi_name)]
         seq_ids <- getNCBISeqID(good_names)
-        metadata <- getMetadata(seq_ids[1:5])
-        metadata <- subset(metadata, select = -c(sequence))
-
-        htmltools::div(style = "padding: 1rem", reactable(metadata))
-        }
+        metadata <- getMetadata(seq_ids)
     })})
 }
 
@@ -174,19 +178,10 @@ showMetadata <- function(input, output, session) {
     }
 }
 
-
-
-ui <- fluidPage(title = "Abbagadabba Visualization",
-    javascriptMap(),
-
-    useShinyjs(),
-    tags$div(style="width: 100%; height: 400px; black; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px; margin-bottom: 20px;", navbar()),
-    tags$div(style="width: 100%; height: 350px; overflow-x: auto; overflow-y: auto; border: 3px solid black; border-radius: 10px;", reactableOutput("output_table"))
-)
-
 taxonKeys <- NULL
 
 server <- function(input, output, session) {
+
     observe({
         x <- name_suggest(input$"ScientificNameTextInput", fields = c("key", "canonicalName", "rank","higherClassificationMap"))
         ScientificNamesTable <- x$data
@@ -209,8 +204,6 @@ server <- function(input, output, session) {
         output$"SelectedScientificNamesTable" <- renderDT(SelectedScientificNamesDataFrame)
         taxonKeys <<- name_suggest(input$"ScientificNameTextInput")$data$key[input$ScientificNamesTable_rows_selected]
     })
-
-    #Append taxonomic hierarchy using rgbif::name_ussage
 
     observeEvent(input$"getOccDataButton", {
         generateOccData(input, output, session)
