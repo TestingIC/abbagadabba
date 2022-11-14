@@ -12,8 +12,10 @@ navbar <- function() {
 }
 
 occurencesPanel <- function() {
-    tabPanel(title = "Occurences",
-    )
+    tabPanel(title = "Occurences", fluidRow(
+        column(2, "Filters", style = "background-color: blue; height: 88vh; overflow: scroll;"),
+        column(10, "Data", style = "background-color: red; height: 88vh; overflow: scroll;")
+    ))
 }
 
 sequencesPanel <- function() {
